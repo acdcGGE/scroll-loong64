@@ -1,0 +1,31 @@
+# ~/.config/scroll/config 片段
+# 顺序很重要：fcitx5 必须在桌面 shell 和任何 GUI 应用之前启动。
+# 完整说明见 docs/scroll-build.md §5 与 §6。
+
+# ---- 输入法（fcitx5）----
+exec --no-startup-id fcitx5 -d
+
+# 若 ~/.profile 的环境变量未被 LightDM 会话继承，在此强制注入：
+exec export GTK_IM_MODULE=fcitx
+exec export QT_IM_MODULE=fcitx
+exec export XMODIFIERS=@im=fcitx
+exec export SDL_IM_MODULE=fcitx
+
+# dbus 会话总线兜底（fcitx 组件需要，LightDM 会话一般已有）
+exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
+
+# ---- 可选配套：noctalia 桌面 shell ----
+# 只装 scroll、作为纯合成器使用时，把下面这一行注释掉即可。
+# noctalia 的编译与打包见 https://github.com/acdcGGE/noctalia-loong64/tree/loong64/loong64
+exec --no-startup-id noctalia --daemon
+
+# ---- 全局快捷键（$mod 默认 Win/Mod4）----
+# 前两行是纯 scroll 用法；后面 noctalia msg 的行需要装了配套 shell 才生效。
+bindsym $mod+Return  exec wezterm
+bindsym $mod+Shift+q kill
+
+# bindsym $mod+space   exec "noctalia msg panel-toggle launcher"
+# bindsym $mod+c       exec "noctalia msg panel-toggle control-center"
+# bindsym $mod+l       exec "noctalia msg session lock"
+# bindsym $mod+comma   exec "noctalia msg settings-open"
+# bindsym Print        exec "noctalia msg screenshot-fullscreen"
