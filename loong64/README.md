@@ -56,8 +56,9 @@ git clone https://github.com/dawsers/scroll "$HOME/build/scroll"
 # 3. 编译 + 打包（首次会自动 meson setup）
 loong64/scripts/track-scroll.sh rebuild
 
-# 4. 安装
-sudo dpkg -i "$HOME"/build/deb/scroll_*.deb && sudo apt-get -f install
+# 4. 安装（必须用 apt：control 声明了 Conflicts/Replaces: noctalia-desktop，
+#    apt 会自动移除旧合并包；dpkg -i 不处理冲突会直接失败）
+sudo apt install "$HOME"/build/deb/scroll_*.deb
 
 # 5. 启用登录会话入口
 sudo loong64/scripts/enable-session.sh

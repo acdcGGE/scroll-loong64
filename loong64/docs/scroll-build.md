@@ -136,6 +136,8 @@ Priority: optional
 Architecture: loong64
 Depends: $SCROLL_DEPS
 Recommends: xwayland
+Conflicts: noctalia-desktop
+Replaces: noctalia-desktop
 Maintainer: local-build <local@build>
 Description: Scroll - a Sway fork Wayland compositor (self-built)
  PaperWM-style tiling Wayland compositor (sway fork) with wlroots 0.21.0
@@ -156,7 +158,7 @@ case "$1" in configure|abort-upgrade) ldconfig ;; esac   # postinst
 ```bash
 dpkg-deb --build --root-owner-group \
   "$DEB_OUT/scroll-root" "$DEB_OUT/scroll_0.0~scroll.${SC_HASH}-1_loong64.deb"
-dpkg -i --dry-run "$DEB_OUT"/scroll_*.deb       # 校验依赖可满足
+dpkg --force-conflicts -i --dry-run "$DEB_OUT"/scroll_*.deb       # 校验依赖可满足
 ldd "$DEB_OUT/scroll-root/usr/local/bin/scroll" | grep 'not found' || echo "OK: 无缺失"
 ```
 
@@ -166,13 +168,21 @@ ldd "$DEB_OUT/scroll-root/usr/local/bin/scroll" | grep 'not found' || echo "OK: 
 
 ## 4. 安装与登录会话
 
+**用 `apt install`，不要用 `dpkg -i`**：
+
 ```bash
-sudo dpkg -i "$DEB_OUT"/scroll_*.deb
-sudo apt-get -f install
+cd "$DEB_OUT"
+sudo apt install ./scroll_*.deb
 which scroll scrollmsg scrollbar scrollnag
 ```
 
-noctalia 是**可选的配套桌面 shell**，需要时另行安装对应 deb（见 [noctalia 仓库](https://github.com/acdcGGE/noctalia-loong64/tree/loong64/loong64)）。只装 scroll 也能直接作为纯合成器使用，只是没有面板 / 启动器 / 通知中心。
+noctalia 是**可选的配套桌面 shell**，需要时一并安装（见 [noctalia 仓库](https://github.com/acdcGGE/noctalia-loong64/tree/loong64/loong64)）。只装 scroll 也能直接作为纯合成器使用，只是没有面板 / 启动器 / 通知中心。两个包一起装用一条命令：
+
+```bash
+sudo apt install ./scroll_*.deb ./noctalia_*.deb
+```
+
+> **从旧合并包 `noctalia-desktop` 迁移**：早期单包与这两个 deb 装同一批路径，旧包还在时会报「正试图覆盖 `/usr/local/bin/scroll`，它同时被包含于软件包 noctalia-desktop」。两个包的 control 都声明了 `Conflicts: noctalia-desktop` + `Replaces: noctalia-desktop`，因此 `apt install` 会先自动 `Remv noctalia-desktop` 再解包新包（`dpkg -i` 不会，会直接失败）。兜底：`sudo apt purge noctalia-desktop` 后重装。用户目录的 `~/.config/scroll/config` 不受 purge 影响。详见 [noctalia 文档 §6.1](https://github.com/acdcGGE/noctalia-loong64/blob/loong64/loong64/docs/noctalia-build.md)。
 
 ### 4.1 LightDM 只扫 /usr/share —— 必须软链会话入口
 
@@ -323,7 +333,7 @@ loong64/scripts/track-scroll.sh rebuild   # 重编 + 重打 scroll deb
 loong64/scripts/track-scroll.sh sync      # update + rebuild 一步到位
 ```
 
-`update` 用 `git checkout -f origin/master` 强制覆盖本地改动（scroll 上游默认分支是 **`master`**，不是 main）。`rebuild` 的流程：前置检查 → `meson compile` → `meson install --destdir` 暂存 → 在 `$DEB_OUT` 生成 `debian/control` 后跑 `dpkg-shlibdeps` 推导系统库依赖 → 写 control + ldconfig 钩子 → `dpkg-deb` 封包 → `dpkg -i --dry-run` 校验。
+`update` 用 `git checkout -f origin/master` 强制覆盖本地改动（scroll 上游默认分支是 **`master`**，不是 main）。`rebuild` 的流程：前置检查 → `meson compile` → `meson install --destdir` 暂存 → 在 `$DEB_OUT` 生成 `debian/control` 后跑 `dpkg-shlibdeps` 推导系统库依赖 → 写 control + ldconfig 钩子 → `dpkg-deb` 封包 → `dpkg --force-conflicts -i --dry-run` 校验。
 
 全部路径可用环境变量覆盖：`BUILD_ROOT`（默认 `$HOME/build`）、`SCROLL_DIR`、`DEB_OUT`、`SCROLL_BRANCH`、`BUILD_REV`。换机复用改这几个变量即可。
 

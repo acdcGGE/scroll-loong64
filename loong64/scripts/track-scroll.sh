@@ -144,6 +144,8 @@ Priority: optional
 Architecture: loong64
 Depends: $scroll_deps
 Recommends: xwayland
+Conflicts: noctalia-desktop
+Replaces: noctalia-desktop
 Maintainer: local-build <local@build>
 Description: Scroll - a Sway fork Wayland compositor (self-built)
  PaperWM-style tiling Wayland compositor (sway fork) with wlroots 0.21.0
@@ -176,11 +178,12 @@ EOF
     fi
   done
   [ "$bad" -eq 0 ] && ok "四个二进制 ldd 均无 not found"
-  info "校验 2: dpkg -i --dry-run"
-  dpkg -i --dry-run "$sc_deb" 2>&1 | tail -4 || warn "dry-run 报告依赖未满足，请用 apt-get -f install 补齐"
+  info "校验 2: dpkg --force-conflicts -i --dry-run（忽略与旧合并包的预期冲突）"
+  dpkg --force-conflicts -i --dry-run "$sc_deb" 2>&1 | tail -4 || warn "dry-run 报告依赖未满足，请用 sudo apt install 补齐"
 
   echo
-  info "安装: sudo dpkg -i $sc_deb && sudo apt-get -f install"
+  info "安装: sudo apt install ./$(basename "$sc_deb")"
+  info "      apt 会自动移除旧合并包 noctalia-desktop；请勿用 dpkg -i"
   info "会话: sudo loong64/scripts/enable-session.sh   (LightDM 软链)"
 }
 
